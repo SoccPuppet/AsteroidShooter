@@ -4,3 +4,5 @@ description=shooter description here
 bundleID=org.iabel.asteroid
 version=0.1
 buildNumber=32
+pdxversion=30003
+buildtime=826323756

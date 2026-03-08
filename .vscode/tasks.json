@@ -4,7 +4,8 @@
     {
       "type": "pdc",
       "problemMatcher": ["$pdc-lua", "$pdc-external"],
-      "label": "Playdate: Build"
+      "label": "Playdate: Build",
+      "incrementBuildNumber": true,
     },
     {
       "type": "playdate-simulator",
