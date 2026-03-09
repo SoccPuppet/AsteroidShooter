@@ -21,6 +21,8 @@ function GetAimDir()
     return ccP
 end
 
+-- Updates all timers. 
+-- This includes currently: `bulletCooldown`
 function UpdateTimers()
     local bulletCooldown = GAMESTATE.bulletCooldown
     if bulletCooldown > 0 then
@@ -49,12 +51,20 @@ function playdate.update()
     gfx.drawLine(GAMESTATE.player.x+math.cos(ToRadian(aimDir/2))*player.size, player.y-math.sin(ToRadian(aimDir/2))*player.size, 
         player.x+math.cos(ToRadian(aimDir/2))*800, player.y-math.sin(ToRadian(aimDir/2))*800)
     
+    -- Creation Corner --
     -- bullet firing logic
     if playdate.buttonIsPressed(playdate.kButtonA) then
         FireBullet(aimDir)
     end
+    if playdate.buttonJustPressed(playdate.kButtonB) then
+        print(SpawnAsteroid())
+    end
+    
+    -- Update Corner -- 
     -- bullet update
     UpdateBullet()
     -- update all timers
     UpdateTimers()
+    -- Update asteroids 
+    UpdateAsteroid()
 end
