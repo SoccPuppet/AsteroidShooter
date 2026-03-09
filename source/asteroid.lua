@@ -5,7 +5,7 @@ import "globals"
 local gfx <const> = playdate.graphics
 
 -- Configuration variables
-local asteroidHP = 100
+local asteroidMaxHP = 100
 local asteroidThreshold = 300 -- in pixels: asteroids cannot spawn to the left of this line.in x.
 local asteroidSway = 5 -- in pixels: the furthest an asteroid can drift
 local asteroidSize = 20 -- in pixels: side length
@@ -50,7 +50,7 @@ end
 -- Create a single asteroid at the given position.
 function CreateAsteroid(posx, posy)
     local asteroidArray = GAMESTATE.asteroidArray
-    local newAsteroid = {x=posx, y=posy, hp=asteroidHP, xoffset=0, yoffset=0, seed=math.random(10)}
+    local newAsteroid = {x=posx, y=posy, hp=asteroidMaxHP, xoffset=0, yoffset=0, seed=math.random(10)}
     table.insert(asteroidArray, newAsteroid)
 end
 
@@ -73,7 +73,11 @@ function UpdateAsteroid()
             gfx.setColor(gfx.kColorBlack)
             local finalx = asteroid.xoffset + asteroid.x
             local finaly = asteroid.yoffset + asteroid.y 
-            gfx.fillRect(finalx - asteroidSize/2, finaly - asteroidSize/2, asteroidSize, asteroidSize)
+            -- outline of it
+            gfx.drawRect(finalx - asteroidSize/2, finaly - asteroidSize/2, asteroidSize, asteroidSize)
+            -- hp-dependent fill
+            gfx.fillRect(finalx - asteroidSize/2, finaly - asteroidSize/2 + asteroidSize*(1 - asteroid.hp/asteroidMaxHP)
+            , asteroidSize, asteroidSize * asteroid.hp/asteroidMaxHP)
         end
     end
 end
