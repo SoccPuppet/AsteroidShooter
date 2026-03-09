@@ -1,8 +1,14 @@
 -- Asteroids serve as the main enemies of the game.
 import "globals"
+import "CoreLibs/sprites"
+import "CoreLibs/object"
 
 -- Niceys Variable
 local gfx <const> = playdate.graphics
+
+-- Assets
+local asteroidFull = gfx.image.new("images/asteroid-full")
+local asteroidHalf = gfx.image.new("images/asteroid-half")
 
 -- Configuration variables
 local asteroidMaxHP = 100
@@ -13,6 +19,20 @@ local rotationalVariance = 50 -- determines the variance in asteroid sway speed
 local asteroidExclusion = asteroidSize * 2 -- in pixels: asteroids should not spawn closer than this
 local asteroidSpawnAttempts = 10
 
+-- Class definition
+class("Asteroid", {xanchor=0, yanchor=0, xoffset=0, yoffset=0, hp=asteroidMaxHP}).extends(gfx.sprite)
+function Asteroid:init(posx, posy)
+    Asteroid.super.init(self)
+    self:setImage(asteroidFull)
+    self.xanchor = posx
+    self.yanchor = posy
+    self.seed = math.random(10)
+    self:moveTo(posx, posy)
+    self:setTag(ENTITY_TAGS.enemy)
+    self:add()
+    self:setCollideRect(0, 0, self:getSize())
+end
+
 -- Create an asteroid randomly in the right side of the screen.
 -- Asteroids cannot spawn too close together, defined by `asteroidExclusion`.
 -- 
@@ -21,7 +41,7 @@ function SpawnAsteroid()
     -- Given some attempts...
     local finalx = 0
     local finaly = 0
-    for i = 1,asteroidSpawnAttempts do
+    for _ = 1,asteroidSpawnAttempts do
         local candidatex = math.random(asteroidThreshold, WindowWidth)
         local candidatey = math.random(0, WindowHeight)
         local candidateGood = true
@@ -50,42 +70,42 @@ end
 -- Create a single asteroid at the given position.
 function CreateAsteroid(posx, posy)
     local asteroidArray = GAMESTATE.asteroidArray
-    local newAsteroid = {x=posx, y=posy, hp=asteroidMaxHP, xoffset=0, yoffset=0, seed=math.random(10)}
+    local newAsteroid = Asteroid(posx, posy)
     table.insert(asteroidArray, newAsteroid)
 end
 
--- Update all asteroids and renders them.
+-- Update asteroid.
 -- They mildly drift around when idle.
--- They disappear when hp reaches 0.
-function UpdateAsteroid()
-    local asteroidArray = GAMESTATE.asteroidArray
+-- They switch to a damaged sprite when below half health.
+function Asteroid:update()
     local time = playdate.getCurrentTimeMilliseconds()
-    for index = #asteroidArray, 1, -1 do
-        local asteroid = asteroidArray[index]
-        -- Destroy 0hp asteroids
-        if asteroid.hp <= 0 then 
-            table.remove(asteroidArray, index)
-        else
-            -- Apply mild offset from drifting
-            asteroid.xoffset = math.sin(time/(1000+asteroid.seed*rotationalVariance) + asteroid.seed) * asteroidSway
-            asteroid.yoffset = math.cos(time/(1000+asteroid.seed*rotationalVariance) + asteroid.seed) * asteroidSway
-            -- Draw the asteroid
-            gfx.setColor(gfx.kColorBlack)
-            local finalx = asteroid.xoffset + asteroid.x
-            local finaly = asteroid.yoffset + asteroid.y 
-            -- outline of it
-            gfx.drawRect(finalx - asteroidSize/2, finaly - asteroidSize/2, asteroidSize, asteroidSize)
-            -- hp-dependent fill
-            gfx.fillRect(finalx - asteroidSize/2, finaly - asteroidSize/2 + asteroidSize*(1 - asteroid.hp/asteroidMaxHP)
-            , asteroidSize, asteroidSize * asteroid.hp/asteroidMaxHP)
+    -- Apply mild offset from drifting
+    self.xoffset = math.sin(time/(1000+self.seed*rotationalVariance) + self.seed) * asteroidSway
+    self.yoffset = math.cos(time/(1000+self.seed*rotationalVariance) + self.seed) * asteroidSway
+    local finalx = self.xoffset + self.xanchor
+    local finaly = self.yoffset + self.yanchor
+    self:moveTo(finalx, finaly)
+    -- Switch sprite if low health
+    if self.hp < asteroidMaxHP/2 then
+        self:setImage(asteroidHalf)
+    end
+end
+
+-- Update all asteroids to check for dead ones
+function UpdateAsteroids()
+    local asteroidArray = GAMESTATE.asteroidArray
+    for i = #asteroidArray, 1, -1 do
+        if asteroidArray[i].hp <= 0 then
+            asteroidArray[i]:remove()
+            table.remove(asteroidArray, i)
         end
     end
 end
 
 -- Checks if the given position is inside an asteroid.
 function PointCheck(posx, posy, asteroid)
-    local finalx = asteroid.xoffset + asteroid.x
-    local finaly = asteroid.yoffset + asteroid.y
+    local finalx = asteroid.xoffset + asteroid.xanchor
+    local finaly = asteroid.yoffset + asteroid.yanchor
     return posx >= finalx - asteroidSize/2 and posx <= finalx + asteroidSize/2 and 
         posy >= finaly - asteroidSize/2 and posy <= finaly + asteroidSize/2
 end

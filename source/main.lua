@@ -5,66 +5,41 @@ import "CoreLibs/timer"
 import "util"
 import "bullet"
 import "globals"
+import "player"
 
 -- Convenience variables
 local gfx <const> = playdate.graphics
 
-function GetAimDir()
-    local crankPos = playdate.getCrankPosition()
-    local ccP = crankPos
-    if crankPos > 180 then
-        ccP = crankPos - 360
-    end
+-- Assets
+local wallpng = gfx.image.new("images/wall")
 
-    ccP *= 1.4
-    ccP = math.max(-60, math.min(60, ccP))
-    return ccP
-end
+-- Important variables
+local player = Player()
+local guideline = Guideline()
 
--- Updates all timers. 
--- This includes currently: `bulletCooldown`
-function UpdateTimers()
-    local bulletCooldown = GAMESTATE.bulletCooldown
-    if bulletCooldown > 0 then
-        bulletCooldown = math.max(0, bulletCooldown - 1/playdate.display.getRefreshRate())
-    end
-    GAMESTATE.bulletCooldown = bulletCooldown
-end
+-- Draw the wall
+local wallsprite = gfx.sprite.new(wallpng)
+wallsprite:setCenter(0, 0)
+wallsprite:moveTo(0, 0)
+wallsprite:setCollideRect(0, 0, 20, WindowHeight)
+wallsprite:add()
 
 function playdate.update()
     local player = GAMESTATE.player
-    gfx.clear()
 
-    local aimDir = GetAimDir()
-    -- draw the final wall 
-    gfx.pushContext()
-    gfx.setColor(gfx.kColorBlack)
-    gfx.fillRect(0, 0, player.x, WindowHeight)
-    gfx.popContext()
-    -- draw the player relative to the crank position
-    gfx.setLineWidth(3)
-    gfx.setColor(gfx.kColorBlack)
-    gfx.drawCircleAtPoint(player.x,  player.y, player.size)
-    -- draw the aim guideline
-    gfx.setLineWidth(1)
-    gfx.setPattern({ 0xef, 0xff, 0xef, 0xff, 0xef, 0xff, 0xef, 0xff })
-    gfx.drawLine(GAMESTATE.player.x+math.cos(ToRadian(aimDir/2))*player.size, player.y-math.sin(ToRadian(aimDir/2))*player.size, 
-        player.x+math.cos(ToRadian(aimDir/2))*800, player.y-math.sin(ToRadian(aimDir/2))*800)
-    
     -- Creation Corner --
     -- bullet firing logic
     if playdate.buttonIsPressed(playdate.kButtonA) then
-        FireBullet(aimDir)
+        FireBullet(player.aimDir)
     end
     if playdate.buttonJustPressed(playdate.kButtonB) then
-        print(SpawnAsteroid())
+        SpawnAsteroid()
     end
     
     -- Update Corner -- 
+    gfx.sprite.update()
     -- bullet update
     UpdateBullet()
-    -- update all timers
-    UpdateTimers()
     -- Update asteroids 
-    UpdateAsteroid()
+    UpdateAsteroids()
 end
